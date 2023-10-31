@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload and Preview Image</title>
+</head>
+<body>
+    <h1>Upload and Preview Image</h1>
+
+    <!-- 表单 -->
+    <form action="/upload" method="POST" enctype="multipart/form-data" id="image-form">
+        <label for="username"><b>Username:</b></label>
+        <input type="text" placeholder="Enter Username" name="username" required><br><br>
+        <label for="email"><b>Email:</b></label>
+        <input type="text" placeholder="Enter Email Address" name="email" required><br><br>
+        <label for="blogid"><b>blogid:</b></label>
+        <input type="text" placeholder="blogid" name="blogid" required><br><br>
+        <input type="file" name="image" id="file-input" accept="image/*">
+        <button type="submit" id="upload-button" style="display: block;">Upload</button>
+    </form>
+
+    <!-- 图片预览区域 -->
+    <div id="image-preview" style="display: none;">
+        <img id="preview-image" src="#" alt="Preview" width="300">
+    </div>
+
+    <p id="message"></p>
+
+    <script>
+        // 预览图片
+        document.getElementById('file-input').addEventListener('change', function (e) {
+            const fileInput = e.target;
+            const previewImage = document.getElementById('preview-image');
+            const imagePreview = document.getElementById('image-preview');
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                previewImage.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        // 点击上传按钮
+        document.getElementById('upload-button').addEventListener('click', function () {
+            const form = new FormData(document.getElementById('image-form'));
+
+            fetch('/upload', {
+                method: 'POST',
+                body: form
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('message').textContent = data;
+            });
+        });
+    </script>
+</body>
+</html>
