@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %} - Yaolicheng's flask website</title>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                {% if current_user.is_authenticated %}
+                    <!-- 显示已登录用户的信息 -->
+                    <p>Welcome, {{ current_user.username }}!</p> <li><a href="/logout">Logout</a></li>
+                {% else %}
+                    <!-- 显示未登录用户的信息 -->
+                    <li><a href="/login">Login</a></li>
+                {% endif %}
+                
+                <li><a href="/about">About</a></li>
+                <li><a href="/contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+    <footer>
+        © Yaolicheng's flask website
+    </footer>
+</body>
+</html>

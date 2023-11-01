@@ -53,6 +53,39 @@ def load_user(user_name):
 login_manager.init_app(app)
 
 
+# 创建一个路由，处理 '/about' 路径的请求
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+@app.route('/reg')
+def reg():
+    return render_template('register.html')
+
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.form['username']
+    email = request.form['email']
+    password = request.form['password']
+    phone = request.form['phonenumber']
+    birthday = request.form['birthday']
+    sex = request.form['sex']
+
+    session = Session()
+
+    sql = text('insert into myweb.myuser(username,pwd,email,phonenumber,sex,birthday) values(:user,:pwd,:email,:phone,:sex,:birthday);')
+    data = {"user": username, "pwd": password,"email":email,"phone":phone,"sex":sex,"birthday":birthday}
+    session.execute(sql, data)
+    #必须要commit才能完成更新的正式提交
+    session.commit()
+    session.close()
+    
+    return render_template('regsuccess.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -75,7 +108,7 @@ def login():
             # 结果集非空
             user = User(username)
             login_user(user)
-            return redirect(url_for('index'))
+            return redirect(url_for('mycount'))
         else:
             # 结果集为空
             return render_template('login.html')
@@ -105,10 +138,6 @@ def hello_world():
     session.close()
     return outline #'hello world'
 
-# 创建一个路由，处理 '/about' 路径的请求
-@app.route('/about')
-def about():
-    return 'This is the about page.'
 
 
 # 创建一个路由，处理 '/edit' 路径的请求
@@ -177,6 +206,7 @@ def upload_file():
             session.execute(sql, data)
             #必须要commit才能完成更新的正式提交
             session.commit()
+            session.close()
 
             #image.save('uploads/' + image.filename)
             return 'Image uploaded successfully!'
