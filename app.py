@@ -16,8 +16,8 @@ from flask_login import UserMixin
 
 # 创建一个 Flask 应用实例
 app = Flask(__name__)
-
-app.secret_key='your_secret_key_here'
+#密钥，必须设置，否则在调用login_user时会报错RuntimeError: The session is unavailable because no secret key was set.  Set the secret_key on the application to something unique and secret.
+app.secret_key='HCRkCYX6fiSQUdx8T3BlbkFJF2Xa1MIChij9TiBd0I7O'
 
 socketio = SocketIO(app)
 
@@ -67,16 +67,16 @@ def login():
         query = text("SELECT 1 FROM myuser where username = :user and pwd= :pwd and status =1")
         data = {"user": username, "pwd": password}
         result = session.execute(query,data)
-        print(result.returns_rows)
+        #要获取所有记录，然后判断rows的长度来判断，只用result.returns_rows是无法正确判断是否有结果的
+        rows = result.fetchall()
+        session.close()
         # 检查结果是否为空
-        if result.returns_rows>0:
+        if len(rows)>0:
             # 结果集非空
             user = User(username)
             login_user(user)
-            session.close()
             return redirect(url_for('index'))
         else:
-            session.close()
             # 结果集为空
             return render_template('login.html')
     return render_template('login.html')
@@ -92,9 +92,7 @@ def logout():
 def hello_world():
     # 创建一个 Session 实例
     session = Session()
-
     outline = ''
-
     # 现在你可以使用 session 对象执行数据库操作
     query = text("SELECT * FROM test")
     result = session.execute(query)
@@ -119,12 +117,16 @@ def edit():
     return render_template('editpage.html')
 
 #获取制定用户的blog
-def getimagesandcontent(user):
+def getimagesandcontent(user=None):
     session = Session()
-    #必须用text格式化，否则无法执行
-    sql = text('SELECT myimage, mycontent,username,starcount,commentcount,blogdate FROM myblogs where username = :user ORDER BY blogdate DESC  LIMIT 10')
-    data ={"user":user}
-    result = session.execute(sql,data)
+    if user:
+        #必须用text格式化，否则无法执行
+        sql = text('SELECT myimage, mycontent,username,starcount,commentcount,blogdate FROM myblogs where username = :user ORDER BY blogdate DESC  LIMIT 10')
+        data ={"user":user}
+        result = session.execute(sql,data)
+    else:
+        sql = text('SELECT myimage, mycontent,username,starcount,commentcount,blogdate FROM myblogs  ORDER BY blogdate DESC  LIMIT 10')
+        result = session.execute(sql)
     encoded_images = []
     contents = []
 
@@ -147,30 +149,8 @@ def getimagesandcontent(user):
 # 路由：显示数据
 @app.route('/')
 def index():
-    
-    session = Session()
-    #必须用text格式化，否则无法执行
-    sql = text('SELECT myimage, mycontent,username,starcount,commentcount,blogdate FROM myblogs ORDER BY blogdate DESC  LIMIT 10')
-    result = session.execute(sql)
-    encoded_images = []
-    contents = []
-
-
-    for data in result:
-        # 对每个图像数据进行Base64编码
-        if data[0]:
-            encoded_image = base64.b64encode(data[0]).decode('utf-8')
-        else:
-            encoded_image = None
-        encoded_images.append(encoded_image)
-        contents.append(data[1])
-    # 最后，记得关闭连接
-    session.close()
-
     # 将数据和编码后的图像组合成一个列表，便于前台读取
-    data_and_images = list(zip(contents, encoded_images))
-
-
+    data_and_images = getimagesandcontent()
     return render_template('index.html', data_and_images =data_and_images)
 
 #我的账户信息
