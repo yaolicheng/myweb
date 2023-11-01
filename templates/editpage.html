@@ -1,27 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upload and Preview Image</title>
+    <title>Add a new blog.</title>
 </head>
 <body>
-    <h1>Upload and Preview Image</h1>
+    <h1>Add a new blog.</h1>
+
+     <!-- 图片预览区域 -->
+     <div id="image-preview" style="display: none;">
+        <img id="preview-image" src="#" alt="Preview" width="300">
+    </div>
 
     <!-- 表单 -->
     <form action="/upload" method="POST" enctype="multipart/form-data" id="image-form">
-        <label for="username"><b>Username:</b></label>
-        <input type="text" placeholder="Enter Username" name="username" required><br><br>
-        <label for="email"><b>Email:</b></label>
-        <input type="text" placeholder="Enter Email Address" name="email" required><br><br>
-        <label for="blogid"><b>blogid:</b></label>
-        <input type="text" placeholder="blogid" name="blogid" required><br><br>
-        <input type="file" name="image" id="file-input" accept="image/*">
-        <button type="submit" id="upload-button" style="display: block;">Upload</button>
+        
+        <li><input type="file" name="image" id="file-input" accept="image/*"></li>
+        <li><label for="keywords"><b>Keywords:</b></label></li>
+        <li><input type="text" placeholder="Keywords"  name="keywords"></li>
+        <li><label for="content"><b>Content:</b></label></li>
+        <li><textarea rows="20" cols="100" placeholder="Enter your content" name="content"></textarea></li>
+        <button type="submit" id="upload-button" style="display: block;">Confirm</button>
     </form>
 
-    <!-- 图片预览区域 -->
-    <div id="image-preview" style="display: none;">
-        <img id="preview-image" src="#" alt="Preview" width="300">
-    </div>
+   
 
     <p id="message"></p>
 
@@ -43,19 +44,6 @@
             reader.readAsDataURL(file);
         });
 
-        // 点击上传按钮
-        document.getElementById('upload-button').addEventListener('click', function () {
-            const form = new FormData(document.getElementById('image-form'));
-
-            fetch('/upload', {
-                method: 'POST',
-                body: form
-            })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('message').textContent = data;
-            });
-        });
     </script>
 </body>
 </html>

@@ -40,7 +40,7 @@
     </header>
     <main>
 
-{% for row,encoded_image  in data_and_images %}
+{% for row,encoded_image,blogid,usname,star,comcount,bdate  in data_and_images %}
     {% if loop.index % 2 == 0 %}
     <div class="row">
         <div class="left">

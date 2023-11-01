@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Display Data</title>
+    <title>Display mycount</title>
     <nav>
         <ul>
             <div><a href="/">Home</a></div>
             {% if current_user.is_authenticated %}
                 <!-- 显示已登录用户的信息 -->
                 <p>Welcome, {{ current_user.username }}!</p> <div><a href="/logout">Logout</a></div>
+                <p><a href="/edit">Add new Bolg.</a></p>
             {% endif %}
         </ul>
     </nav>
@@ -30,12 +31,14 @@
 </style>
 <body>
 
-{% for row,encoded_image  in data_and_images %}
+{% for row,encoded_image,blogid,usname,star,comcount,bdate  in data_and_images %}
     
-    
+    <hr>
+    <div><p> Date:{{ bdate }} stars:{{ star }} comments:{{ comcount }}  <a href="{{ url_for('delete_blog', blogid=blogid) }}">Delete</a> </p> </div>
     <div class="left">
         <img src="data:image/jpeg;base64,{{ encoded_image }}" alt="Image" style="max-width: 50%;"/>
     </div>
+    
     <div class="left">
         <p>{{ row }}</p>
     </div>

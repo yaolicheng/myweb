@@ -117,7 +117,7 @@ def login():
 @app.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 
 # 创建一个路由，处理根路径的请求
@@ -143,21 +143,29 @@ def hello_world():
 # 创建一个路由，处理 '/edit' 路径的请求
 @app.route('/edit')
 def edit():
-    return render_template('editpage.html')
+    if current_user.is_authenticated:
+        return render_template('editpage.html', user=current_user)
+    else:
+        return redirect(url_for('login'))
 
 #获取制定用户的blog
 def getimagesandcontent(user=None):
     session = Session()
     if user:
         #必须用text格式化，否则无法执行
-        sql = text('SELECT myimage, mycontent,username,starcount,commentcount,blogdate FROM myblogs where username = :user ORDER BY blogdate DESC  LIMIT 10')
+        sql = text('SELECT myimage, mycontent,logid,username,starcount,commentcount,blogdate FROM myblogs where username = :user ORDER BY blogdate DESC  LIMIT 10')
         data ={"user":user}
         result = session.execute(sql,data)
     else:
-        sql = text('SELECT myimage, mycontent,username,starcount,commentcount,blogdate FROM myblogs  ORDER BY blogdate DESC  LIMIT 10')
+        sql = text('SELECT myimage, mycontent,logid,username,starcount,commentcount,blogdate FROM myblogs  ORDER BY blogdate DESC  LIMIT 10')
         result = session.execute(sql)
     encoded_images = []
     contents = []
+    logids=[]
+    unames=[]
+    stars=[]
+    comcounts=[]
+    bdates=[]
 
 
     for data in result:
@@ -168,11 +176,16 @@ def getimagesandcontent(user=None):
             encoded_image = None
         encoded_images.append(encoded_image)
         contents.append(data[1])
+        logids.append(data[2])
+        unames.append(data[3])
+        stars.append(data[4])
+        comcounts.append(data[5])
+        bdates.append(data[6])
     # 最后，记得关闭连接
     session.close()
 
     # 将数据和编码后的图像组合成一个列表，便于前台读取
-    data_and_images = list(zip(contents, encoded_images))
+    data_and_images = list(zip(contents, encoded_images,logids,unames,stars,comcounts,bdates))
     return data_and_images
 
 # 路由：显示数据
@@ -191,25 +204,56 @@ def mycount():
     else:
         return redirect(url_for('login'))
 
+@app.route('/delete/<int:blogid>')
+def delete_blog(blogid):
+    if current_user.is_authenticated:
+        # 在这里执行删除操作，使用 blogid 参数来确定要删除的博客
+        session = Session()
+        sql = text('delete from myblogs where logid =:blogid and username=:username')
+        data = {"blogid": blogid,"username":current_user.username}
+        #print(sql)
+        #print(data)
+        session.execute(sql, data)
+        #必须要commit才能完成更新的正式提交
+        session.commit()
+        session.close()
+        # 返回删除后的页面或重定向到其他页面
+        return redirect(url_for('mycount'))
+    else:
+        return redirect(url_for('login'))
+    
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'image' in request.files:
         image = request.files['image']
-        blogid = request.form['blogid']
-        if image.filename != '':
+        content = request.form['content']
+        keywords = request.form['keywords']
+        if image.filename != '':#有图片的日志
             #保存到数据中
+            print("image.filename != ")
             image_binary = image.read()
             session = Session()
 
-            sql = text('UPDATE myblogs SET myimage = :image  WHERE logid =:blogid')
-            data = {"image": image_binary, "blogid": blogid}
+            sql = text('insert into myweb.myblogs(username,keywords,mycontent,myimage) values(:user,:keywords,:content,:image)')
+            data = {"image": image_binary, "user": current_user.username, "keywords":keywords, "content":content}
             session.execute(sql, data)
             #必须要commit才能完成更新的正式提交
             session.commit()
             session.close()
 
             #image.save('uploads/' + image.filename)
-            return 'Image uploaded successfully!'
+            return redirect(url_for('mycount'))
+        else:#没有图片的日志
+            print("没有图片的日志 ")
+            session = Session()
+            sql = text('insert into myweb.myblogs(username,keywords,mycontent) values(:user,:keywords,:content)')
+            data = { "user": current_user.username, "keywords": keywords, "content":content}
+            session.execute(sql, data)
+            #必须要commit才能完成更新的正式提交
+            session.commit()
+            session.close()
+            return redirect(url_for('mycount'))
     return 'Image upload failed.'
 
 if __name__ == '__main__':
