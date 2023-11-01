@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Display Data</title>
+    <nav>
+        <ul>
+            <div><a href="/">Home</a></div>
+            {% if current_user.is_authenticated %}
+                <!-- 显示已登录用户的信息 -->
+                <p>Welcome, {{ current_user.username }}!</p> <div><a href="/logout">Logout</a></div>
+            {% endif %}
+        </ul>
+    </nav>
+</head>
+
+<style>
+    .row {
+        display: flex;
+        margin: 10px;
+    }
+
+    .left {
+        flex: 1;
+        margin-right: 10px;
+    }
+
+    .right {
+        flex: 1;
+    }
+</style>
+<body>
+
+{% for row,encoded_image  in data_and_images %}
+    
+    
+    <div class="left">
+        <img src="data:image/jpeg;base64,{{ encoded_image }}" alt="Image" style="max-width: 50%;"/>
+    </div>
+    <div class="left">
+        <p>{{ row }}</p>
+    </div>
+    
+{% endfor %}
+
+</body>
+</html>
+
