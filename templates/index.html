@@ -26,7 +26,7 @@
                 <li><a href="/">Home</a></li>
                 {% if current_user.is_authenticated %}
                     <!-- 显示已登录用户的信息 -->
-                    <p>Welcome, {{ current_user.username }}!</p> <li><a href="/logout">Logout</a></li>
+                    <p>Welcome, <a href="/mycount">{{ current_user.username }}</a> !</p> <li><a href="/logout">Logout</a></li>
                 {% else %}
                     <!-- 显示未登录用户的信息 -->
                     <li><a href="/login">Login</a></li>
