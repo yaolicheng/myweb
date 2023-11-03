@@ -41,6 +41,9 @@
     <main>
 
 {% for row,encoded_image,blogid,usname,star,comcount,bdate  in data_and_images %}
+    <hr>
+    <div><p> user:{{ usname }}  Date:{{ bdate }} stars:{{ star }} <a href="{{ url_for('blogdetail', blogid=blogid) }}">comments:</a> {{ comcount }}   </p> </div>
+    
     {% if loop.index % 2 == 0 %}
     <div class="row">
         <div class="left">

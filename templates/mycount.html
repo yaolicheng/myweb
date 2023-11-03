@@ -34,7 +34,7 @@
 {% for row,encoded_image,blogid,usname,star,comcount,bdate  in data_and_images %}
     
     <hr>
-    <div><p> Date:{{ bdate }} stars:{{ star }} comments:{{ comcount }}  <a href="{{ url_for('delete_blog', blogid=blogid) }}">Delete</a> </p> </div>
+    <div><p> Date:{{ bdate }} stars:{{ star }} <a href="{{ url_for('blogdetail', blogid=blogid) }}">comments:</a> {{ comcount }}  <a href="{{ url_for('delete_blog', blogid=blogid) }}">Delete</a> </p> </div>
     <div class="left">
         <img src="data:image/jpeg;base64,{{ encoded_image }}" alt="Image" style="max-width: 50%;"/>
     </div>

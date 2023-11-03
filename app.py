@@ -148,7 +148,7 @@ def edit():
     else:
         return redirect(url_for('login'))
 
-#获取制定用户的blog
+#获取指定用户的blog
 def getimagesandcontent(user=None):
     session = Session()
     if user:
@@ -188,6 +188,63 @@ def getimagesandcontent(user=None):
     data_and_images = list(zip(contents, encoded_images,logids,unames,stars,comcounts,bdates))
     return data_and_images
 
+#获取日志信息
+def getblogdetail(blogid):
+    session = Session()
+        #必须用text格式化，否则无法执行
+    sql = text('SELECT myimage, mycontent,logid,username,starcount,commentcount,blogdate FROM myblogs where logid = :logid ')
+    data ={"logid":blogid}
+    result = session.execute(sql,data)
+   
+    data_and_images = []
+
+
+    for data in result:
+        # 对每个图像数据进行Base64编码
+        if data[0]:
+            encoded_image = base64.b64encode(data[0]).decode('utf-8')
+        else:
+            encoded_image = None
+        data_and_images.append(encoded_image)
+        data_and_images.append(data[1])
+        data_and_images.append(data[2])
+        data_and_images.append(data[3])
+        data_and_images.append(data[4])
+        data_and_images.append(data[5])
+        data_and_images.append(data[6])
+    # 最后，记得关闭连接
+    session.close()
+
+    return data_and_images
+
+#获取指定的blog
+def getbolgcomments(blogid):
+    session = Session()
+    
+    #必须用text格式化，否则无法执行
+    sql = text('SELECT commentid, username,mycomment,comdate FROM blogcomments where logid = :logid ORDER BY comdate DESC')
+    data ={"logid":blogid}
+    result = session.execute(sql,data)
+    
+    comids =[]
+    unames=[]
+    comments = []
+    comdates=[]
+
+
+    for data in result:
+     
+        comids.append(data[0])
+        unames.append(data[1])
+        comments.append(data[2])
+        comdates.append(data[3])
+    # 最后，记得关闭连接
+    session.close()
+
+    # 将数据和编码后的图像组合成一个列表，便于前台读取
+    datas = list(zip(comids, unames,comments,comdates))
+    return datas
+
 # 路由：显示数据
 @app.route('/')
 def index():
@@ -204,15 +261,85 @@ def mycount():
     else:
         return redirect(url_for('login'))
 
+#添加评论
+@app.route('/addcomment', methods=['POST'])
+def addcomment():
+
+    if current_user.is_authenticated:
+        username = request.form['username']
+        blogid = request.form['blogid']
+        comment = request.form['comment']
+
+        session = Session()
+
+        sql = text('insert into myweb.blogcomments(logid,username,mycomment) values(:blodid,:user,:comment)')
+        data = {"user": username, "blodid": blogid,"comment":comment}
+        session.execute(sql, data)
+        sql = text('update myweb.myblogs set commentcount = commentcount +1 where logid = :blodid')
+        data = { "blodid": blogid}
+        session.execute(sql, data)
+        #必须要commit才能完成更新的正式提交
+        session.commit()
+        session.close()
+    
+        return redirect(url_for('blogdetail',blogid=blogid))
+    else:
+        return redirect(url_for('login'))
+
+#显示某条blog的信息
+@app.route('/bdetail/<int:blogid>')
+def blogdetail(blogid):
+
+    if current_user.is_authenticated:
+        #获取此记录的详细信息，然后获取它的评论，一起传递给blogdetail.html
+        data_and_images = getblogdetail(blogid)
+        datas = getbolgcomments(blogid)
+        # 返回删除后的页面或重定向到其他页面
+        return render_template('blogdetail.html', user=current_user,data_and_images =data_and_images,comments=datas)
+    else:
+        return redirect(url_for('login'))
+
+#加星功能实现
+@app.route('/addstar/<int:blogid>')
+def addstar(blogid):
+
+    if current_user.is_authenticated:
+        #获取设置star数加1
+        session = Session()
+        #首先判断此用户是否已点过加星
+        sql = text("SELECT 1 FROM starusers where username = :user and logid= :blogid ")
+        data = {"user": current_user.username, "blogid": blogid}
+        result = session.execute(sql,data)
+        #要获取所有记录，然后判断rows的长度来判断，只用result.returns_rows是无法正确判断是否有结果的
+        rows = result.fetchall()
+        if len(rows)==0:
+            sql = text('update myblogs set starcount=starcount+1 where logid =:blogid')
+            data = {"blogid": blogid}
+            session.execute(sql, data)
+            #记录谁加的星
+            sql = text('insert into  starusers(logid,username) values(:blogid,:username)')
+            data = {"blogid": blogid,"username":current_user.username}
+            session.execute(sql, data)
+            #必须要commit才能完成更新的正式提交
+            session.commit()
+        session.close()
+        return redirect(url_for('blogdetail',blogid=blogid))
+    else:
+        return redirect(url_for('login'))
+#删除某条日志
 @app.route('/delete/<int:blogid>')
 def delete_blog(blogid):
     if current_user.is_authenticated:
         # 在这里执行删除操作，使用 blogid 参数来确定要删除的博客
         session = Session()
+        sql = text('delete from starusers where logid =:blogid')
+        data = {"blogid": blogid}
+        session.execute(sql, data)
+        sql = text('delete from blogcomments where logid =:blogid')
+        data = {"blogid": blogid}
+        session.execute(sql, data)
         sql = text('delete from myblogs where logid =:blogid and username=:username')
         data = {"blogid": blogid,"username":current_user.username}
-        #print(sql)
-        #print(data)
         session.execute(sql, data)
         #必须要commit才能完成更新的正式提交
         session.commit()
