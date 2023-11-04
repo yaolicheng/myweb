@@ -56,24 +56,30 @@ login_manager.init_app(app)
 # 创建一个路由，处理 '/about' 路径的请求
 @app.route('/about')
 def about():
+    addaccesslog(request.remote_addr,'/about.html',current_user.username if current_user.is_authenticated else None)
     return render_template('about.html')
 
 @app.route('/contact')
 def contact():
+    addaccesslog(request.remote_addr,'/contact.html',current_user.username if current_user.is_authenticated else None)
     return render_template('contact.html')
 
 @app.route('/reg')
 def reg():
+    addaccesslog(request.remote_addr,'/reg')
     return render_template('register.html')
 
 @app.route('/register', methods=['POST'])
 def register():
+    
     username = request.form['username']
     email = request.form['email']
     password = request.form['password']
     phone = request.form['phonenumber']
     birthday = request.form['birthday']
     sex = request.form['sex']
+
+    addaccesslog(request.remote_addr,'/register',username=None,maininfo='username='+username+' email='+email)
 
     session = Session()
 
@@ -93,6 +99,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        addaccesslog(request.remote_addr,'login POST',username=username)
         #数据库检查
         # 创建一个 Session 实例
         session = Session()
@@ -116,6 +123,7 @@ def login():
 
 @app.route('/logout')
 def logout():
+    addaccesslog(request.remote_addr,'/logout',current_user.username if current_user.is_authenticated else None)
     logout_user()
     return redirect(url_for('index'))
 
@@ -248,6 +256,7 @@ def getbolgcomments(blogid):
 # 路由：显示数据
 @app.route('/')
 def index():
+    addaccesslog(request.remote_addr,'/',current_user.username if current_user.is_authenticated else None)
     # 将数据和编码后的图像组合成一个列表，便于前台读取
     data_and_images = getimagesandcontent()
     return render_template('index.html', data_and_images =data_and_images)
@@ -255,6 +264,7 @@ def index():
 #我的账户信息
 @app.route('/mycount')
 def mycount():
+    addaccesslog(request.remote_addr,'/mycount',current_user.username if current_user.is_authenticated else None)
     if current_user.is_authenticated:
         data_and_images = getimagesandcontent(current_user.username)
         return render_template('mycount.html', user=current_user,data_and_images =data_and_images)
@@ -264,12 +274,12 @@ def mycount():
 #添加评论
 @app.route('/addcomment', methods=['POST'])
 def addcomment():
-
+    
     if current_user.is_authenticated:
         username = request.form['username']
         blogid = request.form['blogid']
         comment = request.form['comment']
-
+        addaccesslog(request.remote_addr,'/addcomment',username,'blogid='+blogid)
         session = Session()
 
         sql = text('insert into myweb.blogcomments(logid,username,mycomment) values(:blodid,:user,:comment)')
@@ -289,7 +299,7 @@ def addcomment():
 #显示某条blog的信息
 @app.route('/bdetail/<int:blogid>')
 def blogdetail(blogid):
-
+    addaccesslog(request.remote_addr,'/bdetail',current_user.username if current_user.is_authenticated else None,'blogid='+str(blogid))
     if current_user.is_authenticated:
         #获取此记录的详细信息，然后获取它的评论，一起传递给blogdetail.html
         data_and_images = getblogdetail(blogid)
@@ -302,7 +312,7 @@ def blogdetail(blogid):
 #加星功能实现
 @app.route('/addstar/<int:blogid>')
 def addstar(blogid):
-
+    addaccesslog(request.remote_addr,'/addstar',current_user.username if current_user.is_authenticated else None,'blogid='+str(blogid))
     if current_user.is_authenticated:
         #获取设置star数加1
         session = Session()
@@ -329,6 +339,7 @@ def addstar(blogid):
 #删除某条日志
 @app.route('/delete/<int:blogid>')
 def delete_blog(blogid):
+    addaccesslog(request.remote_addr,'/delete',current_user.username if current_user.is_authenticated else None,'blogid='+str(blogid))
     if current_user.is_authenticated:
         # 在这里执行删除操作，使用 blogid 参数来确定要删除的博客
         session = Session()
@@ -352,6 +363,8 @@ def delete_blog(blogid):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    addaccesslog(request.remote_addr,'/upload',current_user.username if current_user.is_authenticated else None)
+    
     if 'image' in request.files:
         image = request.files['image']
         content = request.form['content']
@@ -382,6 +395,17 @@ def upload_file():
             session.close()
             return redirect(url_for('mycount'))
     return 'Image upload failed.'
+
+#记录访问的日志
+def addaccesslog(accessip,accesspage,username=None,maininfo=None):
+    #记录访问的日志
+    session = Session()
+    sql = text('insert into myweb.weblogs(username,accessip,accesspage,maininfo) values(:user,:accessip,:accesspage,:maininfo)')
+    data = { "user": username, "accessip": accessip, "accesspage":accesspage, "maininfo":maininfo}
+    session.execute(sql, data)
+    #必须要commit才能完成更新的正式提交
+    session.commit()
+    session.close()
 
 if __name__ == '__main__':
     #allow_unsafe_werkzeug = True 表示允许使用非安全的Werkzeug服务器，这样就可以让程序在后台运行了
